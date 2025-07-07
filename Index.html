@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMR & BMI Calculator สุดคูล!</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a more vibrant, "teenager-friendly" look */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); /* Soft gradient background */
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.95); /* Slightly transparent white */
+            backdrop-filter: blur(10px); /* Frosted glass effect */
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #4a5568; /* Darker text for labels */
+        }
+        .input-group input[type="number"],
+        .input-group input[type="date"], /* Added date input type */
+        .input-group input[type="radio"] + label {
+            border-radius: 10px;
+            border: 1px solid #cbd5e0;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .input-group input[type="number"]:focus,
+        .input-group input[type="date"]:focus { /* Added date input type */
+            outline: none;
+            border-color: #667eea; /* Purple focus border */
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+        .calculate-btn {
+            background: linear-gradient(45deg, #8a2be2, #00bfff); /* Purple to blue gradient */
+            color: white;
+            font-weight: bold;
+            padding: 12px 25px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+        .calculate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        .result-box {
+            background-color: #f0f4f8; /* Light grey background for results */
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+            border: 1px solid #e2e8f0;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        .result-box h3 {
+            color: #2d3748; /* Darker heading */
+            margin-bottom: 15px;
+        }
+        .result-box p {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        .bmi-category {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        /* Specific BMI category colors */
+        .bmi-underweight { background-color: #fbd38d; color: #975a16; } /* Orange-ish */
+        .bmi-normal { background-color: #9ae6b4; color: #2f855a; } /* Green-ish */
+        .bmi-overweight { background-color: #f6ad55; color: #c05621; } /* Darker Orange */
+        .bmi-obesity { background-color: #fc8181; color: #c53030; } /* Red-ish */
+
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #667eea;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: none; /* Hidden by default */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message-box {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 350px;
+            width: 90%;
+            border: 1px solid #e2e8f0;
+        }
+
+        .message-box button {
+            background-color: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none; /* Hidden by default */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .container {
+                padding: 20px;
+                border-radius: 15px;
+            }
+            .calculate-btn {
+                padding: 10px 20px;
+            }
+            .result-box {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-3xl font-extrabold text-center text-gray-800 mb-8">
+            เครื่องคำนวณ BMR & BMI สุดคูล! 😎
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Gender Input -->
+            <div class="input-group">
+                <label class="block text-sm mb-2" for="gender">เพศ:</label>
+                <div class="flex space-x-4">
+                    <input type="radio" id="male" name="gender" value="male" class="hidden" checked>
+                    <label for="male" class="flex-1 text-center py-2 px-4 cursor-pointer bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors duration-200 rounded-lg">ชาย</label>
+
+                    <input type="radio" id="female" name="gender" value="female" class="hidden">
+                    <label for="female" class="flex-1 text-center py-2 px-4 cursor-pointer bg-pink-100 text-pink-800 hover:bg-pink-200 transition-colors duration-200 rounded-lg">หญิง</label>
+                </div>
+            </div>
+
+            <!-- Date of Birth Input -->
+            <div class="input-group">
+                <label class="block text-sm mb-2" for="dob">วันเดือนปีเกิด:</label>
+                <input type="date" id="dob" class="w-full px-4 py-2 rounded-lg">
+            </div>
+
+            <!-- Weight Input -->
+            <div class="input-group">
+                <label class="block text-sm mb-2" for="weight">น้ำหนัก (กิโลกรัม):</label>
+                <input type="number" id="weight" class="w-full px-4 py-2 rounded-lg" min="1" step="0.1" placeholder="เช่น 65.5">
+            </div>
+
+            <!-- Height Input -->
+            <div class="input-group">
+                <label class="block text-sm mb-2" for="height">ส่วนสูง (เซนติเมตร):</label>
+                <input type="number" id="height" class="w-full px-4 py-2 rounded-lg" min="1" step="0.1" placeholder="เช่น 170">
+            </div>
+        </div>
+
+        <button id="calculateBtn" class="calculate-btn flex items-center justify-center gap-2">
+            คำนวณ!
+            <div id="loadingSpinner" class="loading-spinner"></div>
+        </button>
+
+        <div id="result" class="result-box mt-8 hidden">
+            <h3 class="text-xl font-bold mb-4 text-center">ผลลัพธ์ของคุณ ✨</h3>
+            <p><strong>BMR (อัตราการเผาผลาญขั้นพื้นฐาน):</strong> <span id="bmrResult" class="font-semibold text-purple-700"></span> แคลอรี่/วัน</p>
+            <p class="mt-2"><strong>BMI (ดัชนีมวลกาย):</strong> <span id="bmiResult" class="font-semibold text-blue-700"></span></p>
+            <p class="mt-2"><strong>สถานะ BMI:</strong> <span id="bmiCategory" class="bmi-category"></span></p>
+            <p class="mt-4"><strong>คำแนะนำน้ำหนัก:</strong></p>
+            <p id="weightRecommendation" class="text-gray-700"></p>
+        </div>
+    </div>
+
+    <!-- Message Box for Alerts -->
+    <div id="messageBox" class="message-box">
+        <p id="messageText" class="text-lg text-gray-800"></p>
+        <button id="messageCloseBtn">เข้าใจแล้ว!</button>
+    </div>
+    <div id="overlay" class="overlay"></div>
+
+    <script>
+        // Get DOM elements
+        const calculateBtn = document.getElementById('calculateBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const resultDiv = document.getElementById('result');
+        const bmrResultSpan = document.getElementById('bmrResult');
+        const bmiResultSpan = document.getElementById('bmiResult');
+        const bmiCategorySpan = document.getElementById('bmiCategory');
+        const weightRecommendationP = document.getElementById('weightRecommendation');
+
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const messageCloseBtn = document.getElementById('messageCloseBtn');
+        const overlay = document.getElementById('overlay');
+        const dobInput = document.getElementById('dob'); // Get the new DOB input
+
+        // Set max date for DOB input to today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months start at 0!
+        const dd = String(today.getDate()).padStart(2, '0');
+        dobInput.max = `${yyyy}-${mm}-${dd}`;
+
+        // Function to show custom message box
+        function showMessage(message) {
+            messageText.textContent = message;
+            messageBox.style.display = 'flex';
+            overlay.style.display = 'block';
+        }
+
+        // Function to hide custom message box
+        function hideMessageBox() {
+            messageBox.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        // Event listener for message box close button
+        messageCloseBtn.addEventListener('click', hideMessageBox);
+        overlay.addEventListener('click', hideMessageBox); // Close on overlay click
+
+        // Function to calculate age from date of birth
+        function calculateAge(dobString) {
+            const birthDate = new Date(dobString);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        calculateBtn.addEventListener('click', () => {
+            // Show loading spinner and hide previous results
+            loadingSpinner.style.display = 'block';
+            calculateBtn.disabled = true; // Disable button during calculation
+            resultDiv.classList.add('hidden');
+
+            // Get input values
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            const dobString = dobInput.value; // Get date string
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+
+            // Input validation
+            if (!dobString || isNaN(weight) || isNaN(height) || weight <= 0 || height <= 0) {
+                showMessage('กรุณากรอกข้อมูลให้ครบถ้วนและเป็นตัวเลขที่ถูกต้อง (น้ำหนักและส่วนสูงต้องมากกว่า 0) 😅');
+                loadingSpinner.style.display = 'none';
+                calculateBtn.disabled = false;
+                return;
+            }
+
+            const age = calculateAge(dobString);
+
+            if (age < 0 || age > 120) { // Basic age validation
+                showMessage('วันเดือนปีเกิดไม่ถูกต้อง หรืออายุเกินขอบเขตที่คำนวณได้ (0-120 ปี) 😅');
+                loadingSpinner.style.display = 'none';
+                calculateBtn.disabled = false;
+                return;
+            }
+
+            // Simulate a short delay for better UX (optional)
+            setTimeout(() => {
+                let bmr;
+                // BMR Calculation (Mifflin-St Jeor Equation)
+                if (gender === 'male') {
+                    bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+                } else { // female
+                    bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+                }
+
+                // BMI Calculation
+                const heightInMeters = height / 100;
+                const bmi = weight / (heightInMeters * heightInMeters);
+
+                // Determine BMI Category and Recommendation
+                let bmiCategoryText = '';
+                let bmiCategoryClass = '';
+                let recommendationText = '';
+
+                if (bmi < 18.5) {
+                    bmiCategoryText = 'น้ำหนักน้อยเกินไป 😔';
+                    bmiCategoryClass = 'bmi-underweight';
+                    const minIdealWeight = 18.5 * (heightInMeters * heightInMeters);
+                    const weightToGain = minIdealWeight - weight;
+                    recommendationText = `คุณควรเพิ่มน้ำหนักอีกประมาณ ${weightToGain.toFixed(1)} กิโลกรัม เพื่อให้น้ำหนักอยู่ในเกณฑ์ปกติ (BMI 18.5 - 24.9)`;
+                } else if (bmi >= 18.5 && bmi < 24.9) {
+                    bmiCategoryText = 'น้ำหนักปกติ เยี่ยมเลย! 👍';
+                    bmiCategoryClass = 'bmi-normal';
+                    recommendationText = 'น้ำหนักของคุณอยู่ในเกณฑ์ปกติแล้ว รักษาไว้นะครับ!';
+                } else if (bmi >= 25 && bmi < 29.9) {
+                    bmiCategoryText = 'น้ำหนักเกิน 🙁';
+                    bmiCategoryClass = 'bmi-overweight';
+                    const maxIdealWeight = 24.9 * (heightInMeters * heightInMeters);
+                    const weightToLose = weight - maxIdealWeight;
+                    recommendationText = `คุณควรลดน้ำหนักอีกประมาณ ${weightToLose.toFixed(1)} กิโลกรัม เพื่อให้น้ำหนักอยู่ในเกณฑ์ปกติ (BMI 18.5 - 24.9)`;
+                } else { // bmi >= 30
+                    bmiCategoryText = 'อ้วน 🚨';
+                    bmiCategoryClass = 'bmi-obesity';
+                    const maxIdealWeight = 24.9 * (heightInMeters * heightInMeters);
+                    const weightToLose = weight - maxIdealWeight;
+                    recommendationText = `คุณควรลดน้ำหนักอีกประมาณ ${weightToLose.toFixed(1)} กิโลกรัม เพื่อให้น้ำหนักอยู่ในเกณฑ์ปกติ (BMI 18.5 - 24.9) ควรปรึกษาผู้เชี่ยวชาญด้านสุขภาพเพื่อวางแผนการลดน้ำหนักที่เหมาะสม`;
+                }
+
+                // Display results
+                bmrResultSpan.textContent = bmr.toFixed(2);
+                bmiResultSpan.textContent = bmi.toFixed(2);
+                bmiCategorySpan.textContent = bmiCategoryText;
+                bmiCategorySpan.className = `bmi-category ${bmiCategoryClass}`; // Apply specific color class
+                weightRecommendationP.textContent = recommendationText;
+
+                resultDiv.classList.remove('hidden'); // Show results
+                loadingSpinner.style.display = 'none'; // Hide spinner
+                calculateBtn.disabled = false; // Enable button
+            }, 500); // 0.5 second delay
+        });
+
+        // Set default gender selection style
+        document.addEventListener('DOMContentLoaded', () => {
+            const maleRadio = document.getElementById('male');
+            const femaleRadio = document.getElementById('female');
+            const maleLabel = document.querySelector('label[for="male"]');
+            const femaleLabel = document.querySelector('label[for="female"]');
+
+            // Function to update label styles
+            const updateGenderLabelStyles = () => {
+                if (maleRadio.checked) {
+                    maleLabel.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                    maleLabel.classList.remove('bg-blue-100', 'text-blue-800', 'hover:bg-blue-200');
+                    femaleLabel.classList.remove('bg-pink-600', 'text-white', 'hover:bg-pink-700');
+                    femaleLabel.classList.add('bg-pink-100', 'text-pink-800', 'hover:bg-pink-200');
+                } else if (femaleRadio.checked) {
+                    femaleLabel.classList.add('bg-pink-600', 'text-white', 'hover:bg-pink-700');
+                    femaleLabel.classList.remove('bg-pink-100', 'text-pink-800', 'hover:bg-pink-200');
+                    maleLabel.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                    maleLabel.classList.add('bg-blue-100', 'text-blue-800', 'hover:bg-blue-200');
+                }
+            };
+
+            // Initial style update
+            updateGenderLabelStyles();
+
+            // Add event listeners for changes
+            maleRadio.addEventListener('change', updateGenderLabelStyles);
+            femaleRadio.addEventListener('change', updateGenderLabelStyles);
+        });
+    </script>
+</body>
+</html>
