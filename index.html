@@ -33,7 +33,8 @@
             color: #4a5568; /* Darker text for labels */
         }
         .input-group input[type="number"],
-        .input-group input[type="date"], /* Added date input type */
+        .input-group input[type="date"],
+        .input-group select, /* Added select input type */
         .input-group input[type="radio"] + label {
             border-radius: 10px;
             border: 1px solid #cbd5e0;
@@ -42,7 +43,8 @@
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         .input-group input[type="number"]:focus,
-        .input-group input[type="date"]:focus { /* Added date input type */
+        .input-group input[type="date"]:focus,
+        .input-group select:focus { /* Added select input type */
             outline: none;
             border-color: #667eea; /* Purple focus border */
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
@@ -198,6 +200,18 @@
                 <label class="block text-sm mb-2" for="height">ส่วนสูง (เซนติเมตร):</label>
                 <input type="number" id="height" class="w-full px-4 py-2 rounded-lg" min="1" step="0.1" placeholder="เช่น 170">
             </div>
+
+            <!-- Activity Level Input (Removed as per user request to only calculate BMR) -->
+            <!-- <div class="input-group md:col-span-2">
+                <label class="block text-sm mb-2" for="activityLevel">ระดับกิจกรรม:</label>
+                <select id="activityLevel" class="w-full px-4 py-2 rounded-lg">
+                    <option value="1.2">ไม่ออกกำลังกายเลย หรือน้อยมาก</option>
+                    <option value="1.375">ออกกำลังกายเล็กน้อย (1-3 วัน/สัปดาห์)</option>
+                    <option value="1.55">ออกกำลังกายปานกลาง (3-5 วัน/สัปดาห์)</option>
+                    <option value="1.725">ออกกำลังกายหนัก (6-7 วัน/สัปดาห์)</option>
+                    <option value="1.9">ออกกำลังกายหนักมาก (ทุกวัน หรือทำงานที่ต้องใช้แรง)</option>
+                </select>
+            </div> -->
         </div>
 
         <button id="calculateBtn" class="calculate-btn flex items-center justify-center gap-2">
@@ -208,10 +222,15 @@
         <div id="result" class="result-box mt-8 hidden">
             <h3 class="text-xl font-bold mb-4 text-center">ผลลัพธ์ของคุณ ✨</h3>
             <p><strong>BMR (อัตราการเผาผลาญขั้นพื้นฐาน):</strong> <span id="bmrResult" class="font-semibold text-purple-700"></span> แคลอรี่/วัน</p>
+            <!-- TDEE Result (Removed as per user request) -->
+            <!-- <p class="mt-2"><strong>TDEE (พลังงานที่ใช้ต่อวันทั้งหมด):</strong> <span id="tdeeResult" class="font-semibold text-green-700"></span> แคลอรี่/วัน</p> -->
             <p class="mt-2"><strong>BMI (ดัชนีมวลกาย):</strong> <span id="bmiResult" class="font-semibold text-blue-700"></span></p>
             <p class="mt-2"><strong>สถานะ BMI:</strong> <span id="bmiCategory" class="bmi-category"></span></p>
             <p class="mt-4"><strong>คำแนะนำน้ำหนัก:</strong></p>
             <p id="weightRecommendation" class="text-gray-700"></p>
+            <!-- Weight Control Recommendation (Adjusted to be based on BMR only or general advice) -->
+            <p class="mt-4"><strong>คำแนะนำการควบคุมน้ำหนัก:</strong></p>
+            <p id="weightControlRecommendation" class="text-gray-700"></p>
         </div>
     </div>
 
@@ -228,15 +247,18 @@
         const loadingSpinner = document.getElementById('loadingSpinner');
         const resultDiv = document.getElementById('result');
         const bmrResultSpan = document.getElementById('bmrResult');
+        // const tdeeResultSpan = document.getElementById('tdeeResult'); // Removed TDEE span
         const bmiResultSpan = document.getElementById('bmiResult');
         const bmiCategorySpan = document.getElementById('bmiCategory');
         const weightRecommendationP = document.getElementById('weightRecommendation');
+        const weightControlRecommendationP = document.getElementById('weightControlRecommendation');
 
         const messageBox = document.getElementById('messageBox');
         const messageText = document.getElementById('messageText');
         const messageCloseBtn = document.getElementById('messageCloseBtn');
         const overlay = document.getElementById('overlay');
-        const dobInput = document.getElementById('dob'); // Get the new DOB input
+        const dobInput = document.getElementById('dob');
+        // const activityLevelSelect = document.getElementById('activityLevel'); // Removed activity level select
 
         // Set max date for DOB input to today
         const today = new Date();
@@ -282,9 +304,10 @@
 
             // Get input values
             const gender = document.querySelector('input[name="gender"]:checked').value;
-            const dobString = dobInput.value; // Get date string
+            const dobString = dobInput.value;
             const weight = parseFloat(document.getElementById('weight').value);
             const height = parseFloat(document.getElementById('height').value);
+            // const activityFactor = parseFloat(activityLevelSelect.value); // Removed activity factor
 
             // Input validation
             if (!dobString || isNaN(weight) || isNaN(height) || weight <= 0 || height <= 0) {
@@ -313,6 +336,9 @@
                     bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
                 }
 
+                // TDEE Calculation (Removed as per user request)
+                // const tdee = bmr * activityFactor;
+
                 // BMI Calculation
                 const heightInMeters = height / 100;
                 const bmi = weight / (heightInMeters * heightInMeters);
@@ -321,6 +347,7 @@
                 let bmiCategoryText = '';
                 let bmiCategoryClass = '';
                 let recommendationText = '';
+                let weightControlRecommendationText = '';
 
                 if (bmi < 18.5) {
                     bmiCategoryText = 'น้ำหนักน้อยเกินไป 😔';
@@ -328,30 +355,40 @@
                     const minIdealWeight = 18.5 * (heightInMeters * heightInMeters);
                     const weightToGain = minIdealWeight - weight;
                     recommendationText = `คุณควรเพิ่มน้ำหนักอีกประมาณ ${weightToGain.toFixed(1)} กิโลกรัม เพื่อให้น้ำหนักอยู่ในเกณฑ์ปกติ (BMI 18.5 - 24.9)`;
+                    weightControlRecommendationText = `เพื่อเพิ่มน้ำหนักอย่างมีสุขภาพดี: ควรรับประทานอาหารให้ได้พลังงานมากกว่า BMR เล็กน้อย (ประมาณ ${ (bmr + 300).toFixed(0) } - ${ (bmr + 500).toFixed(0) } แคลอรี่ต่อวัน) โดยเน้นอาหารที่มีประโยชน์และโปรตีนสูง และออกกำลังกายสร้างกล้ามเนื้อ`;
                 } else if (bmi >= 18.5 && bmi < 24.9) {
                     bmiCategoryText = 'น้ำหนักปกติ เยี่ยมเลย! 👍';
                     bmiCategoryClass = 'bmi-normal';
                     recommendationText = 'น้ำหนักของคุณอยู่ในเกณฑ์ปกติแล้ว รักษาไว้นะครับ!';
+                    weightControlRecommendationText = `เพื่อรักษาน้ำหนักปัจจุบัน: ควรรับประทานอาหารให้ได้พลังงานเท่ากับหรือมากกว่า BMR เล็กน้อย (ประมาณ ${ (bmr + 200).toFixed(0) } - ${ (bmr + 500).toFixed(0) } แคลอรี่ต่อวัน ขึ้นอยู่กับกิจกรรมในแต่ละวันของคุณ) และออกกำลังกายอย่างสม่ำเสมอ`;
                 } else if (bmi >= 25 && bmi < 29.9) {
                     bmiCategoryText = 'น้ำหนักเกิน 🙁';
                     bmiCategoryClass = 'bmi-overweight';
                     const maxIdealWeight = 24.9 * (heightInMeters * heightInMeters);
                     const weightToLose = weight - maxIdealWeight;
                     recommendationText = `คุณควรลดน้ำหนักอีกประมาณ ${weightToLose.toFixed(1)} กิโลกรัม เพื่อให้น้ำหนักอยู่ในเกณฑ์ปกติ (BMI 18.5 - 24.9)`;
+                    // Target calories for weight loss based on BMR
+                    const targetCalories = Math.max(bmr - 200, 1200); // Ensure not too low, minimum 1200 for women, 1500 for men generally
+                    weightControlRecommendationText = `เพื่อลดน้ำหนัก: ควรรับประทานอาหารให้ได้พลังงานประมาณ ${ targetCalories.toFixed(0) } แคลอรี่ต่อวัน (น้อยกว่า BMR เล็กน้อย) และเพิ่มการออกกำลังกาย ควรเน้นอาหารที่มีโปรตีนสูงและลดคาร์โบไฮเดรต/ไขมันที่ไม่จำเป็น`;
                 } else { // bmi >= 30
                     bmiCategoryText = 'อ้วน 🚨';
                     bmiCategoryClass = 'bmi-obesity';
                     const maxIdealWeight = 24.9 * (heightInMeters * heightInMeters);
                     const weightToLose = weight - maxIdealWeight;
                     recommendationText = `คุณควรลดน้ำหนักอีกประมาณ ${weightToLose.toFixed(1)} กิโลกรัม เพื่อให้น้ำหนักอยู่ในเกณฑ์ปกติ (BMI 18.5 - 24.9) ควรปรึกษาผู้เชี่ยวชาญด้านสุขภาพเพื่อวางแผนการลดน้ำหนักที่เหมาะสม`;
+                    // Target calories for weight loss based on BMR
+                    const targetCalories = Math.max(bmr - 500, 1200); // More aggressive deficit, but not too low
+                    weightControlRecommendationText = `เพื่อลดน้ำหนัก: ควรรับประทานอาหารให้ได้พลังงานประมาณ ${ targetCalories.toFixed(0) } แคลอรี่ต่อวัน และเพิ่มการออกกำลังกายอย่างสม่ำเสมอ ควรปรึกษาแพทย์หรือนักโภชนาการเพื่อวางแผนการลดน้ำหนักที่เหมาะสมและปลอดภัย`;
                 }
 
                 // Display results
                 bmrResultSpan.textContent = bmr.toFixed(2);
+                // tdeeResultSpan.textContent = tdee.toFixed(2); // Removed TDEE display
                 bmiResultSpan.textContent = bmi.toFixed(2);
                 bmiCategorySpan.textContent = bmiCategoryText;
                 bmiCategorySpan.className = `bmi-category ${bmiCategoryClass}`; // Apply specific color class
                 weightRecommendationP.textContent = recommendationText;
+                weightControlRecommendationP.textContent = weightControlRecommendationText;
 
                 resultDiv.classList.remove('hidden'); // Show results
                 loadingSpinner.style.display = 'none'; // Hide spinner
